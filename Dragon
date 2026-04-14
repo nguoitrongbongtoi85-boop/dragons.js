@@ -1,0 +1,116 @@
+// ===== DRAGONS ULTRA MOD =====
+
+// ===== TRỨNG RỒNG =====
+elements.dragon_egg = {
+    color: "#8844ff",
+    behavior: behaviors.POWDER,
+    category: "life",
+    state: "solid",
+    tick: function(pixel) {
+        if (Math.random() < 0.003) {
+            let types = ["dragon","water_dragon","poison_dragon"];
+            changePixel(pixel, types[Math.floor(Math.random()*types.length)]);
+        }
+    }
+};
+
+// ===== HÀM TÌM HUMAN GẦN NHẤT =====
+function findHuman(pixel, range=15) {
+    for (let dx = -range; dx <= range; dx++) {
+        for (let dy = -range; dy <= range; dy++) {
+            let x = pixel.x + dx;
+            let y = pixel.y + dy;
+            if (!outOfBounds(x,y) && pixelMap[x][y] && pixelMap[x][y].element === "human") {
+                return {x,y};
+            }
+        }
+    }
+    return null;
+}
+
+// ===== RỒNG THƯỜNG =====
+elements.dragon = {
+    color: "#33cc33",
+    category: "life",
+    state: "solid",
+    density: 0.5,
+    tick: function(pixel) {
+
+        // BAY LÊN
+        if (isEmpty(pixel.x, pixel.y-1)) movePixel(pixel, pixel.x, pixel.y-1);
+
+        // TÌM MỤC TIÊU
+        let target = findHuman(pixel);
+
+        if (target) {
+            // ĐUỔI THEO HUMAN
+            let dx = Math.sign(target.x - pixel.x);
+            let dy = Math.sign(target.y - pixel.y);
+
+            if (isEmpty(pixel.x+dx, pixel.y)) movePixel(pixel, pixel.x+dx, pixel.y);
+            if (isEmpty(pixel.x, pixel.y+dy)) movePixel(pixel, pixel.x, pixel.y+dy);
+
+            // PHUN LỬA 1 HƯỚNG
+            if (Math.random() < 0.2) {
+                let fx = pixel.x + dx;
+                let fy = pixel.y + dy;
+                if (isEmpty(fx, fy)) createPixel("fire", fx, fy);
+            }
+        } else {
+            // BAY THEO ĐÀN (random gần nhau)
+            if (Math.random() < 0.3) {
+                let dir = Math.random()<0.5?-1:1;
+                if (isEmpty(pixel.x+dir, pixel.y)) movePixel(pixel, pixel.x+dir, pixel.y);
+            }
+        }
+
+        // THUẦN HÓA (gặp human -> pet)
+        if (Math.random() < 0.001) {
+            pixel.tamed = true;
+        }
+    },
+    reactions: {
+        "human": { elem2: "bone" }
+    }
+};
+
+// ===== RỒNG NƯỚC =====
+elements.water_dragon = {
+    color: "#3399ff",
+    category: "life",
+    density: 0.6,
+    tick: function(pixel) {
+
+        if (isEmpty(pixel.x, pixel.y-1)) movePixel(pixel, pixel.x, pixel.y-1);
+
+        if (Math.random() < 0.2) {
+            let dir = Math.random()<0.5?-1:1;
+            if (isEmpty(pixel.x+dir, pixel.y)) {
+                movePixel(pixel, pixel.x+dir, pixel.y);
+                createPixel("water", pixel.x+dir, pixel.y);
+            }
+        }
+    }
+};
+
+// ===== RỒNG ĐỘC =====
+elements.poison_dragon = {
+    color: "#66ff66",
+    category: "life",
+    density: 0.5,
+    tick: function(pixel) {
+
+        if (isEmpty(pixel.x, pixel.y-1)) movePixel(pixel, pixel.x, pixel.y-1);
+
+        // NHẢ KHÍ ĐỘC
+        if (Math.random() < 0.1) {
+            let dir = Math.random()<0.5?-1:1;
+            if (isEmpty(pixel.x+dir, pixel.y)) {
+                createPixel("poison", pixel.x+dir, pixel.y);
+            }
+        }
+    },
+    reactions: {
+        "human": { elem2: "rotten_meat" }
+    }
+};
